@@ -32,16 +32,14 @@ function runMenu() {
     })
     .then(function(answer) {
       switch (answer.action) {
-      case "View":
+        case "View":
           runView();
-//        artistSearch();
-        break;
+          break;
 
-      case "Add":
-        console.log("You chose Add");
-        runMenu();
-//        multiSearch();
-        break;
+        case "Add":
+          console.log("You chose Add");
+          runAdd();
+          break;
 
       case "Update":
         console.log("You chose Update"); 
@@ -65,7 +63,7 @@ function runMenu() {
 }
 
 // This will handle all of the viewing possibities for the user:  
-async function runView() {
+function runView() {
     inquirer
       .prompt({
         name: "action",
@@ -90,7 +88,6 @@ async function runView() {
                 break;
   
             case "View Roles":
-                console.log("You chose View Roles");
                 var query = "SELECT * FROM role ORDER BY id";
                 connection.query(query, function(err, res) {
                     console.log("                          ");
@@ -105,7 +102,6 @@ async function runView() {
                 break;
   
             case "View Employees":
-                console.log("You chose View Employees"); 
                 var query = "SELECT * FROM employee ORDER BY id";
                 connection.query(query, function(err, res) {
                     console.table(res);
@@ -120,5 +116,62 @@ async function runView() {
         }
     });
     
+}
+
+function runAdd() {
+  inquirer
+    .prompt({
+      name: "action",
+      type: "list",
+      message: "What would you like to do?",
+      choices: ["Add Departments","Add Roles","Add Employees","Exit"]
+  })
+    .then(function(answer) {
+       switch (answer.action) {
+          case "Add Departments":
+              inquirer.prompt({
+                name: "dept",
+                type: "input",
+                message: "What department would you like to add?"
+              })
+              .then(function({dept}) {
+                  var query = `INSERT INTO DEPARTMENT (name) VALUES ("${dept}")`;
+                  console.log(query)
+                  connection.query(query, function(err, res) {
+                      console.log(`Department ${dept} has been added to database`);
+                      runAdd();
+                  });
+              }); 
+              break;
+
+          // case "Add Roles":
+          //     // var query = "SELECT * FROM role ORDER BY id";
+          //     // connection.query(query, function(err, res) {
+          //     //     console.log("                          ");
+          //     //     console.log("------------- BEGINNING OF ROLES -----------");
+          //     //     console.log("                          ");
+          //     //     console.table(res);
+          //     //     console.log("                          ");
+          //     //     console.log("---------------- END OF ROLES --------------");
+          //     //     console.log("                          ");
+          //         runView();
+          //     });
+          //     break;
+
+          // case "Add Employees":
+          //     var query = "SELECT * FROM employee ORDER BY id";
+          //     connection.query(query, function(err, res) {
+          //         console.table(res);
+          //         runView();
+          //     });
+          //     break;
+
+          case "Exit":
+          default:   
+              runMenu();
+              break;  
+      }
+  });
+  
 }
 
