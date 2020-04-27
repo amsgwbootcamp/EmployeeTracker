@@ -8,7 +8,9 @@ const menuChoices = ["View All Departments",
                      "Add Roles",
                      "Add Employees",
                      "Update",
-                     "Delete",
+                     "Delete A Department",
+                     "Delete A Role",
+                     "Delete An Employee",
                      "Exit"]
 
 var connection = mysql.createConnection({
@@ -99,10 +101,16 @@ function runMenu() {
         console.log("You chose Update"); 
         break;
 
-      case "Delete":
-        console.log("You chose Delete");  
-        break;
+      case "Delete A Department":
+          deleteDept();  
+          break;
 
+      case "Delete A Role":
+          console.log("You chose Delete");  
+          break;  
+
+      case "Delete An Employee":
+          break;    
       case "Exit":
       default:    
          connection.end();
@@ -175,62 +183,130 @@ function processAddRole() {
 
 function processAddEmployee()
 {
-  var dept = [];
-  var roles = [];
-  var chosenDept = "";
-  var chosenRole = "";
-  var firstName = "";
-  var lastName = "";
+    var dept = [];
+    var roles = ["None"];
+    var rolesId = [];
+    var managers = ["None"];
+    var managersId = [""];
+    var chosenDept = "";
+    var chosenRoleId = 0;
+    var chosenDeptId = 0;
+        
+    var queryDepts = `SELECT name FROM DEPARTMENT ORDER BY id`;
+    connection.query(queryDepts, function(err, res) 
+    {
+        for (var i = 0; i < res.length; i++) 
+        {  
+          dept.push(res[i].name); 
+        }
 
-  var queryDepts = `SELECT name FROM DEPARTMENT ORDER BY id`;
-  connection.query(queryDepts, function(err, res) 
-  {
-    for (var i = 0; i < res.length; i++) 
-    {  
-      dept.push(res[i].name); 
-    }
-    
-    inquirer.prompt(
-      {
-        name: "dept",
-        type: "list",
-        message: "What department would you like to add the employee to?",
-        choices: dept
-      })
-      .then(function({dept}) 
-      {
-        chosenDept = dept;
-        var queryRoles = `SELECT title FROM ROLE WHERE department_id = `;
-        queryRoles += `(SELECT id FROM DEPARTMENT WHERE name = "${dept}");`;
-        connection.query(queryRoles, function(err, res)
+        inquirer.prompt(
         {
-          for (var z = 0; z < res.length; z++)
-          { 
-            roles.push(res[z].title); 
-          }
-
-          inquirer.prompt(
-          [{  
-            name: "roles",
+            name: "dept",
             type: "list",
-            message: "What role would you like to the employee to have?",
-            choices: roles
-          },
-          {
-            name: "firstName",
-            type: "input",
-            message: "What is the first name of the employee?"
-          },
-          {
-            name: "lastName",
-            type: "input",
-            message: "What is the last name of the employee?"
-          }])
-          .then(function({roles,firstName,lastName}) 
-          {
-            console.log(roles, firstName, lastName);
-          });
-        });
-      }); 
-  });
+            message: "What department would you like to add the employee to?",
+            choices: dept
+        })
+        .then(function({dept})  
+        {
+            chosenDept = dept;
+            var queryRoles = `SELECT id, title, department_id FROM ROLE WHERE department_id = `;
+            queryRoles += `(SELECT id FROM DEPARTMENT WHERE name = "${dept}");`;
+            connection.query(queryRoles, function(err, res)
+            {
+                for (var z = 0; z < res.length; z++)
+                { 
+                    roles.push(res[z].title); 
+                    rolesId.push({id: res[z].id,
+                    title: res[z].title,
+                    department_id: res[z].department_id});
+                }
+
+                var queryManagers = `SELECT id, first_name, last_name FROM EMPLOYEE WHERE manager_id IS NULL`;
+                    queryManagers += ` AND role_id IN (SELECT id FROM role WHERE department_id = `;
+                    queryManagers += `(SELECT id FROM department WHERE name = "${chosenDept}"));`;
+                    
+                connection.query(queryManagers, function(err, res) 
+                {   
+
+                    for (var y = 0; y < res.length; y++)
+                    {
+                        managers.push(res[y].first_name+" "+res[y].last_name);
+                        managersId.push({id: res[y].id,
+                                         first_name: res[y].first_name,
+                                         last_name: res[y].last_name});
+                    }
+                
+                    inquirer.prompt(
+                    [{
+                        name: "managers",
+                        type: "list",
+                        message: "Who will be the employee's manager?",
+                        choices: managers
+                    },
+                    {  
+                        name: "roles",
+                        type: "list",
+                        message: "What role would you like to the employee to have?",
+                        choices: roles
+                    },
+                    {
+                        name: "firstName",
+                        type: "input",
+                        message: "What is the first name of the employee?"
+                    },
+                    {
+                        name: "lastName",
+                        type: "input",
+                        message: "What is the last name of the employee?"
+                    }])
+                    .then(function({managers,roles,firstName,lastName}) 
+                    {
+                        for (var x = 0; x < rolesId.length; x++)
+                        {
+                            if (rolesId[x].title === roles)
+                            {
+                                chosenRoleId = rolesId[x].id;
+                                chosenDeptId = rolesId[x].department_id;
+                            }
+                        }    
+
+                        var managerName = managers.split(" ");
+                         
+                        if (roles === "None" && managers === "None")
+                        {
+                            var insertQuery = `INSERT INTO employee(first_name, last_name)`;
+                                insertQuery += `VALUES ("${firstName}", "${lastName}");`
+                        }    
+                        else if (roles !== "None" && managers === "None")
+                        {
+                            var insertQuery = `INSERT INTO employee(first_name, last_name, role_id)`; 
+                                insertQuery += `VALUES ("${firstName}", "${lastName}", ${chosenRoleId});`;
+                        }    
+                        else if (roles !== "None" && managers !== "None")   
+                        {
+                            var insertQuery = `INSERT INTO employee(first_name, last_name, role_id, manager_id) `;
+                            insertQuery += `VALUES ("${firstName}", "${lastName}", ${chosenRoleId}, `;
+                            insertQuery += `(SELECT id FROM employee WHERE first_name = "${managerName[0]}" `;
+                            insertQuery += `AND last_name = "${managerName[1]}");`;
+                        }
+                        
+                        console.log(insertQuery);
+                        connection.query(insertQuery, function(err, res)
+                        {
+                            console.log(`                                                                `);
+                            console.log(`----------------------------------------------------------------`);
+                            console.log(`        Employee: ${firstName} ${lastName}                      `);
+                            console.log(`        Role: ${roles}                                          `);
+                            console.log(`        Department: ${chosenDept}                               `);
+                            console.log(`        Has Been Added To The Database                          `);
+                            console.log(`----------------------------------------------------------------`);
+                            console.log(`                                                                `);
+                            runMenu();
+                        });
+                    });
+                });
+            });
+        }); 
+    });
 }
