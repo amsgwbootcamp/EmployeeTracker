@@ -106,7 +106,7 @@ function runMenu() {
           break;
 
       case "Delete A Role":
-          console.log("You chose Delete");  
+          deleteRole();  
           break;  
 
       case "Delete An Employee":
@@ -121,61 +121,67 @@ function runMenu() {
 
 function processAddDept()
 {
-  inquirer.prompt({
-    name: "dept",
-    type: "input",
-    message: "What department would you like to add?"
- }).then(function({dept}) {
-      var query = `INSERT INTO DEPARTMENT (name) VALUES ("${dept}")`;
-      console.log(query)
-      connection.query(query, function(err, res) {
-          console.log("---------------------------------------------");
-          console.log(`Department ${dept} has been added to database`);
-          console.log("---------------------------------------------");
-          runMenu();
-      });
-  });
-   
+    inquirer.prompt(
+    {
+        name: "dept",
+        type: "input",
+        message: "What department would you like to add?"
+    })
+    .then(function({dept}) 
+    {
+        var query = `INSERT INTO DEPARTMENT (name) VALUES ("${dept}")`;
+        connection.query(query, function(err, res) {
+            console.log("---------------------------------------------");
+            console.log(`Department ${dept} has been added to database`);
+            console.log("---------------------------------------------");
+            runMenu();
+       });
+    });
 }  
 
-function processAddRole() {
+function processAddRole() 
+{
     var depts = [];
     var query = `SELECT name FROM DEPARTMENT ORDER BY id`;
     connection.query(query, function(err, res) 
     {  
-       for (var i = 0; i < res.length; i++) 
-       {  depts.push(res[i].name); }
-       
-       inquirer.prompt
-       ([
-          {
-              name: "dept",
-              type: "list",
-              message: "What department would you like to add the role to?",
-              choices: depts
-          },
-          {
-              name: "roleName",
-              type: "input",
-              message: "What role would like to add?"
-          },
-          {
-              message: "What is the salary for this role?",
-              type: "input",
-              name: "salary"
-          }
+        for (var i = 0; i < res.length; i++) 
+        {  
+            depts.push(res[i].name); 
+        }
+
+        inquirer.prompt([
+        {
+            name: "dept",
+            type: "list",
+            message: "What department would you like to add the role to?",
+            choices: depts
+        },
+        {
+            name: "roleName",
+            type: "input",
+            message: "What role would like to add?"
+        },
+        {
+            message: "What is the salary for this role?",
+            type: "input",
+            name: "salary"
+        }
         ])
         .then(function({dept,roleName,salary}) 
-        {
+        {       
             var query = `INSERT INTO ROLE (title, salary, department_id) VALUES ("${roleName}",${salary},`;
                 query += `(select id from department where name = "${dept}"));`
-            console.log(query)
-            connection.query(query, function(err, res) {
-              console.log("----------------------------------------------------------------");
-              console.log(`        Role of ${roleName} has been added to database.         `);
-              console.log(`With a salary of S${salary} to the following department: ${dept}`);
-              console.log("----------------------------------------------------------------");
-              runMenu();
+
+            connection.query(query, function(err, res) 
+            {
+                console.log("                                                                ");
+                console.log("----------------------------------------------------------------");
+                console.log(`        Role of ${roleName} has been added to database.         `);
+                console.log(`With a salary of S${salary} to the following department: ${dept}`);
+                console.log("----------------------------------------------------------------");
+                console.log("                                                                ");
+                runMenu();
             });
         });
     });
@@ -310,3 +316,124 @@ function processAddEmployee()
         }); 
     });
 }
+
+function deleteDept()
+{
+    var depts = [];
+    var queryDepts = `SELECT name FROM DEPARTMENT ORDER BY id`;
+    
+    connection.query(queryDepts, function(err, res) 
+    {
+        for (var i = 0; i < res.length; i++) 
+        {  
+            depts.push(res[i].name); 
+        }     
+
+        inquirer.prompt(
+        {
+            name: "dept",
+            type: "list",
+            message: "What department would you like to delete?",
+            choices: depts
+        })
+        .then(function({dept}) 
+        {
+            var query = `DELETE FROM DEPARTMENT WHERE name = "${dept}";`;
+            console.log(query)
+            connection.query(query, function(err, res) 
+            {
+                console.log("                                                     ");
+                console.log("-----------------------------------------------------");
+                console.log(`Department ${dept} has been deleted from the database`);
+                console.log("-----------------------------------------------------");
+                console.log("                                                     ");
+                runMenu();
+            });
+        }); 
+    }); 
+}     
+
+function deleteRole() 
+{
+    var roles = ["None"];
+    var rolesId = [];
+    var depts = [];
+    var chosenRoleId = 0;
+    var chosenDeptId = 0;
+    var query = `SELECT name FROM DEPARTMENT ORDER BY id`;
+    connection.query(query, function(err, res) 
+    {  
+        for (var i = 0; i < res.length; i++) 
+        {  
+            depts.push(res[i].name); 
+        }
+
+        inquirer.prompt(
+        {
+            name: "dept",
+            type: "list",
+            message: "What department would you like to delete the role from?",
+            choices: depts
+        })
+        .then(function({dept}) 
+        {   
+            var queryRoles = `SELECT id, title, department_id FROM ROLE WHERE department_id = `;
+            queryRoles += `(SELECT id FROM DEPARTMENT WHERE name = "${dept}");`; 
+            connection.query(queryRoles, function(err, res) 
+            {  
+                for (var z = 0; z < res.length; z++)
+                { 
+                    roles.push(res[z].title); 
+                    rolesId.push({id: res[z].id,
+                    title: res[z].title,
+                    department_id: res[z].department_id});
+                }
+                
+                inquirer.prompt(
+                {
+                    name: "role",
+                    type: "list",
+                    message: "What role would you like to delete?",
+                    choices: roles
+                })
+                .then(function({role}) 
+                {
+                    if (role === "None")
+                    {
+                        console.log(`                                                                `);
+                        console.log(`----------------------------------------------------------------`);
+                        console.log(`            No Role To Delete.  Nothing has been                `);
+                        console.log(`                  deleted from the database.                    `);
+                        console.log(`----------------------------------------------------------------`);
+                        console.log(`                                                                `);
+                    }
+                    else
+                    {
+                        for (var x = 0; x < rolesId.length; x++)
+                        {
+                            if (rolesId[x].title === role)
+                            {
+                                chosenRoleId = rolesId[x].id;
+                                chosenDeptId = rolesId[x].department_id;
+                            }
+                        }
+                        var query = `DELETE FROM ROLE where title = "${role}" and department_id = ${chosenDeptId} `;
+                            query += `and id = ${chosenRoleId};`
+
+                        connection.query(query, function(err, res) 
+                        {
+                            console.log(`                                                                `);
+                            console.log(`----------------------------------------------------------------`);
+                            console.log(`            Role of ${role} In Department ${dept}               `);
+                            console.log(`            has been deleted from the database.                 `);
+                            console.log(`----------------------------------------------------------------`);
+                            console.log(`                                                                `);
+                        
+                        });
+                    }
+                    runMenu();
+                });
+            });
+        });
+    });
+}        
