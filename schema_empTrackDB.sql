@@ -1,4 +1,4 @@
-#DROP DATABASE if exists empTrackDB;
+DROP DATABASE if exists empTrackDB;
 CREATE DATABASE empTrackDB;
 
 USE empTrackDB;
@@ -21,7 +21,7 @@ PRIMARY KEY(id)
 CREATE TABLE role (
 id				int			auto_increment,
 title			varchar(30),
-salary			decimal,
+salary			decimal(10,2),
 department_id	int,
 PRIMARY KEY(id)
 );

@@ -7,7 +7,7 @@ const menuChoices = ["View All Departments",
                      "Add Departments",
                      "Add Roles",
                      "Add Employees",
-                     "Update",
+                     "Update Employee Role",
                      "Delete A Department",
                      "Delete A Role",
                      "Delete An Employee",
@@ -41,84 +41,104 @@ function runMenu() {
       message: "What would you like to do?",
       choices:  menuChoices
     })
-    .then(function(answer) {
-      switch (answer.action) {
+    .then(function(answer) 
+    {
+      switch (answer.action) 
+      {
         case "View All Departments":
-            var query = "SELECT * FROM department ORDER BY id";
-                connection.query(query, function(err, res) {
-                console.log("                              ");
-                console.log("--- BEGINNING OF DEPARTMENTS ---");
-                console.log("                              ");
-                console.table(res);
-                console.log("                              ");
-                console.log("------ END OF DEPARTMENTS ------");
-                console.log("                              ");
-                runMenu();
-            });
+            viewDepts();
             break;
           
-          case "View All Roles":
-            var query = "SELECT * FROM role ORDER BY id";
-                connection.query(query, function(err, res) {
-                console.log("                          ");
-                console.log("------------- BEGINNING OF ROLES -----------");
-                console.log("                          ");
-                console.table(res);
-                console.log("                          ");
-                console.log("---------------- END OF ROLES --------------");
-                console.log("                          ");
-                runMenu();
-            });
+        case "View All Roles":
+            viewRoles();
             break;
 
         case "View All Employees":
-            var query = "SELECT * FROM employee ORDER BY id";
-                connection.query(query, function(err, res) {
-                  console.log("                          ");
-                  console.log("------------- BEGINNING OF EMPLOYEES -----------");
-                  console.log("                          ");
-                  console.table(res);
-                  console.log("                          ");
-                  console.log("---------------- END OF EMPLOYEES --------------");
-                  console.log("                          ");
-                  runMenu();    
-            });
+            viewEmployees();
             break;
 
         case "Add Departments":
-                processAddDept();
-                break;
+            processAddDept();
+            break;
            
         case "Add Roles":
-                processAddRole();
-                break;
+            processAddRole();
+            break;
         
         case "Add Employees":
-                processAddEmployee();     
-                break;
+            processAddEmployee();     
+            break;
 
-      case "Update":
-        console.log("You chose Update"); 
-        break;
+        case "Update Employee Role":
+            updateEmployeeRole(); 
+            break;
 
-      case "Delete A Department":
-          deleteDept();  
-          break;
+        case "Delete A Department":
+            deleteDept();  
+            break;
 
-      case "Delete A Role":
-          deleteRole();  
-          break;  
+        case "Delete A Role":
+            deleteRole();  
+            break;  
 
-      case "Delete An Employee":
-          break;    
-      case "Exit":
-      default:    
-         connection.end();
-         break;  
+        case "Delete An Employee":
+            deleteEmployee();
+            break;    
+
+        case "Exit":
+        default:    
+            connection.end();
+            break;  
       }
     });
 }
 
+function viewDepts()
+{
+    var query = "SELECT * FROM department ORDER BY id";
+    connection.query(query, function(err, res) 
+    {
+        console.log("                                ");
+        console.log("--- BEGINNING OF DEPARTMENTS ---");
+        console.log("                                ");
+        console.table(res);
+        console.log("                                ");
+        console.log("------ END OF DEPARTMENTS ------");
+        console.log("                                ");
+        runMenu();
+    });
+}
+
+function viewRoles()
+{
+    var query = "SELECT * FROM role ORDER BY id";
+    connection.query(query, function(err, res) {
+        console.log("                                            ");
+        console.log("------------- BEGINNING OF ROLES -----------");
+        console.log("                                            ");
+        console.table(res);
+        console.log("                                            ");
+        console.log("---------------- END OF ROLES --------------");
+        console.log("                                            ");
+        runMenu();
+    });
+}
+
+function viewEmployees()
+{
+    var query = "SELECT * FROM employee ORDER BY id";
+    connection.query(query, function(err, res) 
+    {
+        console.log("                                                ");
+        console.log("------------- BEGINNING OF EMPLOYEES -----------");
+        console.log("                                                ");
+        console.table(res);
+        console.log("                                                ");
+        console.log("---------------- END OF EMPLOYEES --------------");
+        console.log("                          ");
+        runMenu();    
+    });
+}
 function processAddDept()
 {
     inquirer.prompt(
@@ -178,7 +198,7 @@ function processAddRole()
                 console.log("                                                                ");
                 console.log("----------------------------------------------------------------");
                 console.log(`        Role of ${roleName} has been added to database.         `);
-                console.log(`With a salary of S${salary} to the following department: ${dept}`);
+                console.log(` With a salary of ${salary} to the following department: ${dept}`);
                 console.log("----------------------------------------------------------------");
                 console.log("                                                                ");
                 runMenu();
@@ -193,10 +213,10 @@ function processAddEmployee()
     var roles = ["None"];
     var rolesId = [];
     var managers = ["None"];
-    var managersId = [""];
+    var managersId = [];
     var chosenDept = "";
     var chosenRoleId = 0;
-    var chosenDeptId = 0;
+    var chosenManagerId = 0;
         
     var queryDepts = `SELECT name FROM DEPARTMENT ORDER BY id`;
     connection.query(queryDepts, function(err, res) 
@@ -274,6 +294,7 @@ function processAddEmployee()
                             {
                                 chosenRoleId = rolesId[x].id;
                                 chosenDeptId = rolesId[x].department_id;
+                                break;
                             }
                         }    
 
@@ -291,10 +312,17 @@ function processAddEmployee()
                         }    
                         else if (roles !== "None" && managers !== "None")   
                         {
+                             
+                            for (var i = 0; i < managersId.length; i ++)
+                            {
+                                if ((managerName[0] === managersId[i].first_name) && (managerName[1] === managersId[i].last_name))
+                                {
+                                    chosenManagerId = managersId[i].id;
+                                    break;
+                                }
+                            }
                             var insertQuery = `INSERT INTO employee(first_name, last_name, role_id, manager_id) `;
-                            insertQuery += `VALUES ("${firstName}", "${lastName}", ${chosenRoleId}, `;
-                            insertQuery += `(SELECT id FROM employee WHERE first_name = "${managerName[0]}" `;
-                            insertQuery += `AND last_name = "${managerName[1]}");`;
+                            insertQuery += `VALUES ("${firstName}", "${lastName}", ${chosenRoleId}, ${chosenManagerId});`;
                         }
                         
                         console.log(insertQuery);
@@ -339,7 +367,6 @@ function deleteDept()
         .then(function({dept}) 
         {
             var query = `DELETE FROM DEPARTMENT WHERE name = "${dept}";`;
-            console.log(query)
             connection.query(query, function(err, res) 
             {
                 console.log("                                                     ");
@@ -415,6 +442,7 @@ function deleteRole()
                             {
                                 chosenRoleId = rolesId[x].id;
                                 chosenDeptId = rolesId[x].department_id;
+                                break;
                             }
                         }
                         var query = `DELETE FROM ROLE where title = "${role}" and department_id = ${chosenDeptId} `;
@@ -436,4 +464,239 @@ function deleteRole()
             });
         });
     });
+}   
+
+function deleteEmployee()
+{
+    var employees = [];
+    var employeesId = [];
+    var firstName = "";
+    var lastName = "";
+    var empId = 0;
+    var queryEmployees = `SELECT id, first_name, last_name FROM EMPLOYEE ORDER BY last_name, first_name`;
+    
+    connection.query(queryEmployees, function(err, res) 
+    {
+        for (var i = 0; i < res.length; i++) 
+        {  
+            employees.push(res[i].id + " " + res[i].first_name + " " + res[i].last_name);             
+        }     
+
+        inquirer.prompt(
+        {
+            name: "employee",
+            type: "list",
+            message: "What is the id of the employee would you like to delete?",
+            choices: employees
+        })
+        .then(function({employee}) 
+        {
+            var employeeName = employee.split(" ");
+            var empId = parseInt(employeeName[0]);
+            var query = `DELETE FROM EMPLOYEE WHERE id = ${empId};`;
+            
+            connection.query(query, function(err, res) 
+            {
+                console.log("                                                                    ");
+                console.log("--------------------------------------------------------------------");
+                console.log(`        Employee Id: ${employeeName[0]}                             `);
+                console.log(`        Employee First Name: ${employeeName[1]}                     `);
+                console.log(`        Employee Last Name: ${employeeName[2]}                      `);
+                console.log(`        has been deleted from the database`                          );
+                console.log("--------------------------------------------------------------------");
+                console.log("                                                                    ");
+                runMenu();
+            });
+        }); 
+    }); 
+}
+
+function updateEmployeeRole()
+{
+    var employees = [];
+    var employeeIds = [];
+    var depts = ["None"];
+    var roles = ["None"];
+    var roleIds = [];
+    var managers = ["None"];
+    var managerIds = [];
+    var deptIds = [];
+     
+    var queryEmployees = `SELECT id, first_name, last_name FROM employee ORDER BY id`;
+    connection.query(queryEmployees, function(err, res)
+    {
+        for (var i=0; i < res.length; i++)
+        {
+            employees.push(res[i].first_name + " " + res[i].last_name);
+            employeeIds.push({id: res[i].id,
+                      first_name: res[i].first_name,
+                       last_name: res[i].last_name});
+        }
+
+        inquirer.prompt(
+        {
+            name: "employee",
+            type: "list",
+            message: "What employee would you like to update?",
+            choices: employees
+        })
+        .then(function({employee})  
+        {
+            var queryDepts = `SELECT id, name FROM DEPARTMENT ORDER BY id`;
+            connection.query(queryDepts, function(err, res) 
+            {
+                for (var i = 0; i < res.length; i++) 
+                {  
+                  depts.push(res[i].name); 
+                }
+        
+                inquirer.prompt(
+                {
+                    name: "dept",
+                    type: "list",
+                    message: "What department would you like to add the employee to?",
+                    choices: depts
+                })
+                .then(function({dept})  
+                { 
+                    
+                    chosenDept = dept;
+                    var queryRoles = `SELECT id, title, department_id FROM ROLE WHERE department_id = `;
+                        queryRoles += `(SELECT id FROM DEPARTMENT WHERE name = "${dept}");`;
+                    connection.query(queryRoles, function(err, res)
+                    {
+                        for (var z = 0; z < res.length; z++)
+                        { 
+                            roles.push(res[z].title); 
+                            roleIds.push({id: res[z].id,
+                            title: res[z].title,
+                            department_id: res[z].department_id});
+                        }
+
+                        var queryManagers = `SELECT id, first_name, last_name FROM EMPLOYEE WHERE manager_id IS NULL`;
+                            queryManagers += ` AND role_id IN (SELECT id FROM role WHERE department_id = `;
+                            queryManagers += `(SELECT id FROM department WHERE name = "${chosenDept}"));`;
+                    
+                        connection.query(queryManagers, function(err, res) 
+                        {   
+
+                            for (var y = 0; y < res.length; y++)
+                            {
+                                managers.push(res[y].first_name+" "+res[y].last_name);
+                                managerIds.push({id: res[y].id,
+                                         first_name: res[y].first_name,
+                                          last_name: res[y].last_name});
+                            }
+
+                            inquirer.prompt(
+                            [{
+                                name: "manager",
+                                type: "list",
+                                message: "Who will be the employee's manager?",
+                                choices: managers
+                            },
+                            {  
+                                name: "role",
+                                type: "list",
+                                message: "What role would you like to the employee to have?",
+                                choices: roles
+                            }])
+                            .then(function({manager,role}) 
+                            {
+                                if (role !== "None")
+                                {
+                                    for (var i = 0; i < roleIds.length; i++)
+                                    {
+                                        if (role === roleIds[i].title)
+                                        {
+                                            roleId = roleIds[i].id;
+                                            break;
+                                        }
+                                    }
+                                }    
+
+                                if (manager !== "None")
+                                {
+                                    var managerName = manager.split(" ");
+                                    for (var j = 0; j < managerIds.length; j++)
+                                    {
+                                        if ((managerName[0] === managerIds[j].first_name) && (managerName[1] === managerIds[j].last_name))
+                                        {
+                                            managerId = managerIds[j].id;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                var employeeName = employee.split(" ");
+                                for (var k = 0; k < employeeIds.length; k++)
+                                {
+                                    if ((employeeName[0] === employeeIds[k].first_name) && (employeeName[1] === employeeIds[k].last_name))
+                                    {
+                                        empId = employeeIds[k].id;
+                                        break;
+                                    }
+                                }
+                                
+                                var msgDept = dept;
+                                var msgRole = role;
+                                var msgManager = manager;
+                                var finalMessage = "";
+                                
+                                if (role === "None" && manager === "None")
+                                {                                   
+                                    finalMessage = "could not be updated";
+                                }
+                                else if (manager === "None" & role !== "None")
+                                {
+                                    finalMessage = "has been updated in the database";
+                                    var updateRoleQuery = `UPDATE employee SET role_id = ${roleId}` ;
+                                    updateRoleQuery += ` WHERE id = ${empId};`
+                                    
+                                } else 
+                                {   
+                                    finalMessage = "has been updated in the database";
+                                    var updateRoleQuery = `UPDATE employee SET role_id = ${roleId}, manager_id = ${managerId}` ;
+                                        updateRoleQuery += ` WHERE id = ${empId};`
+                                           
+                                }        
+                                 
+                                if (role === "None" && manager === "None")
+                                {
+                                    console.log("                                                                    ");
+                                    console.log("--------------------------------------------------------------------");
+                                    console.log(`        Employee First Name: ${employeeName[0]}                     `);
+                                    console.log(`        Employee Last Name: ${employeeName[1]}                      `);
+                                    console.log(`        Department: ${msgDept}                                      `);
+                                    console.log(`        Manager: ${msgManager}                                      `);
+                                    console.log(`        Role: ${msgRole}                                            `);
+                                    console.log(`        ${finalMessage}                                             `);
+                                    console.log("--------------------------------------------------------------------");
+                                    console.log("                                                                    "); 
+                                    runMenu(); 
+                                }
+                                else
+                                {
+                                    connection.query(updateRoleQuery, function(err, res) 
+                                    {
+                                        console.log("                                                                    ");
+                                        console.log("--------------------------------------------------------------------");
+                                        console.log(`        Employee First Name: ${employeeName[0]}                     `);
+                                        console.log(`        Employee Last Name: ${employeeName[1]}                      `);
+                                        console.log(`        Department: ${msgDept}                                      `);
+                                        console.log(`        Manager: ${msgManager}                                      `);
+                                        console.log(`        Role: ${msgRole}                                            `);
+                                        console.log(`        ${finalMessage}                                             `);
+                                        console.log("--------------------------------------------------------------------");
+                                        console.log("                                                                    "); 
+                                        runMenu(); 
+                                    });
+                                }      
+                            });
+                        });
+                    });
+                });
+            });    
+        });
+    });        
 }        
