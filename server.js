@@ -324,8 +324,7 @@ function processAddEmployee()
                             var insertQuery = `INSERT INTO employee(first_name, last_name, role_id, manager_id) `;
                             insertQuery += `VALUES ("${firstName}", "${lastName}", ${chosenRoleId}, ${chosenManagerId});`;
                         }
-                        
-                        console.log(insertQuery);
+                                                
                         connection.query(insertQuery, function(err, res)
                         {
                             console.log(`                                                                `);
