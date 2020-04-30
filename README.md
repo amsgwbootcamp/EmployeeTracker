@@ -44,7 +44,7 @@ So that I can organize and plan my business
 
 This project will track all of my employees using a MySql database.  
 
-Please make sure to install the following npm packages:  mysql, inquirer and console.table before excuting.
+Please make sure to install the following npm packages:  mysql, inquirer and console.table before executing.
 
 To start the program the user will enter the following at the command prompt:
 
